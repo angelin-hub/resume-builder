@@ -18,7 +18,7 @@ import type {
   ApiError,
 } from "@shared/api";
 
-const BASE = "/api";
+const BASE = import.meta.env.VITE_API_URL ?? "/api";
 
 // ─── Token / User storage ─────────────────────────────────────────────────────
 
@@ -134,18 +134,31 @@ async function request<T>(
     if (token) headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  // 8-second timeout — prevents long waits when DB/server is slow
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
 
-  const data = await res.json();
-  if (!res.ok) {
-    const err = data as ApiError;
-    throw new Error(err.error ?? "Unknown error");
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    const data = await res.json();
+    if (!res.ok) {
+      const err = data as ApiError;
+      throw new Error(err.error ?? "Unknown error");
+    }
+    return data as T;
+  } catch (err: any) {
+    clearTimeout(timer);
+    // Re-label abort errors clearly so shouldFallbackToLocal catches them
+    if (err?.name === "AbortError") throw new Error("fetch failed: timeout");
+    throw err;
   }
-  return data as T;
 }
 
 // ─── Local auth helpers (no-DB fallback) ──────────────────────────────────────
@@ -209,18 +222,26 @@ function localSignIn(payload: SignInRequest): AuthResponse {
 }
 
 // ─── Helper: decide whether to fall back to local auth ───────────────────────
-// Triggers when: server has no DB (500 "Internal server error"), network is
-// down (TypeError: Failed to fetch), or any other server-side crash.
+// Falls back to local whenever the server is unreachable, returns a 5xx,
+// has no DB, or throws any network error.
 function shouldFallbackToLocal(err: any): boolean {
-  const msg: string = err?.message ?? "";
+  if (!err) return true;
+  const msg: string = (err?.message ?? String(err)).toLowerCase();
   return (
-    msg.includes("Internal server error") ||
-    msg.includes("DATABASE_URL") ||
-    msg.includes("Failed to fetch") ||
+    msg.includes("internal server error") ||
+    msg.includes("database_url") ||
+    msg.includes("failed to fetch") ||
+    msg.includes("fetch failed") ||
     msg.includes("fetch") ||
-    msg.includes("NetworkError") ||
+    msg.includes("networkerror") ||
+    msg.includes("network") ||
     msg.includes("503") ||
-    msg.includes("500")
+    msg.includes("500") ||
+    msg.includes("502") ||
+    msg.includes("504") ||
+    msg.includes("unknown error") ||
+    msg.includes("load failed") ||
+    msg.includes("connection")
   );
 }
 
