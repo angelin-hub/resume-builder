@@ -22,7 +22,7 @@ import TemplatePicker from "./pages/TemplatePicker";
 import AISuggestions from "./pages/AISuggestions";
 import Templates from "./pages/Templates";
 import ResumePreview from "./pages/ResumePreview";
-import NotFound from "./pages/NotFound";
+import InterviewPrep from "./pages/InterviewPrep";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +72,7 @@ function AnimatedRoutes() {
         <Route path="/ai-suggestions" element={<PageTransition><AISuggestions /></PageTransition>} />
         <Route path="/templates" element={<PageTransition><Templates /></PageTransition>} />
         <Route path="/resume-preview" element={<PageTransition><ResumePreview /></PageTransition>} />
+        <Route path="/interview-prep" element={<PageTransition><InterviewPrep /></PageTransition>} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>

@@ -16,6 +16,7 @@
     "ci:guard-no-drizzle-push": "node scripts/guard-no-drizzle-push.mjs"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@neondatabase/serverless": "^1.0.2",
     "aos": "^2.3.4",
     "dotenv": "^17.2.1",

@@ -61,7 +61,56 @@ export const handleAIChat: RequestHandler = async (req, res) => {
   }
 };
 
-// ── /api/ai/suggest ──────────────────────────────────────────────────────────
+// ── /api/ai/interview ────────────────────────────────────────────────────────
+export const handleAIInterview: RequestHandler = async (req, res) => {
+  const { action, role, experience, question, answer } = req.body;
+
+  // 2. Read the API key from environment variable
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(503).json({ error: "GEMINI_API_KEY is not set." });
+  }
+
+  try {
+    // 3. Invoke the model — real LLM call
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    if (action === "generate") {
+      const prompt = `Generate exactly 5 interview questions for a ${experience}-level ${role} position.
+Mix behavioral (2), technical (2), and situational (1) questions.
+Return ONLY a JSON array of 5 question strings. No other text.`;
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().trim()
+        .replace(/^```json\n?/, "").replace(/\n?```$/, "").trim();
+      const questions = JSON.parse(text);
+      return res.json({ questions });
+    }
+
+    if (action === "evaluate") {
+      const prompt = `You are an expert interviewer evaluating a candidate answer.
+Role: ${role}
+Question: ${question}
+Candidate answer: ${answer}
+
+Evaluate the answer and return ONLY a JSON object with:
+- score: number 0-100
+- feedback: 2-3 sentence constructive feedback mentioning strengths and areas to improve
+
+Return ONLY the JSON object, no other text.`;
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().trim()
+        .replace(/^```json\n?/, "").replace(/\n?```$/, "").trim();
+      const evaluation = JSON.parse(text);
+      return res.json(evaluation);
+    }
+
+    return res.status(400).json({ error: "Invalid action" });
+  } catch (err: any) {
+    console.error("[Gemini] interview error:", err?.message ?? err);
+    return res.status(500).json({ error: "AI request failed. Please try again." });
+  }
+};
 export const handleAISuggest: RequestHandler = async (req, res) => {
   const { resumeData } = req.body as { resumeData: Record<string, any> };
 

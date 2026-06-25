@@ -67,6 +67,9 @@ export default function Navigation() {
           <Link to="/template-picker" className="text-foreground/70 hover:text-foreground smooth-transition">
             Templates
           </Link>
+          <Link to="/interview-prep" className="text-foreground/70 hover:text-foreground smooth-transition">
+            Interview Prep
+          </Link>
           <a href="#testimonials" className="text-foreground/70 hover:text-foreground smooth-transition">
             Testimonials
           </a>
