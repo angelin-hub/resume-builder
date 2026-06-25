@@ -303,20 +303,64 @@ export default function AISuggestions() {
   const [scanning, setScanning] = useState(true);
   const [scanProgress, setScanProgress] = useState(0);
   const [activeFilter, setActiveFilter] = useState<Suggestion["category"] | "all">("all");
+  const [aiError, setAiError] = useState(false);
 
-  // Simulate AI scan
+  // Real AI scan — calls Gemini via server, falls back to static suggestions
   useEffect(() => {
-    const interval = setInterval(() => {
-      setScanProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setScanning(false);
-          return 100;
-        }
-        return prev + 4;
-      });
+    let prog = 0;
+    // Start progress animation
+    const progressInterval = setInterval(() => {
+      prog = Math.min(prog + 3, 85); // go to 85% while waiting for API
+      setScanProgress(prog);
     }, 60);
-    return () => clearInterval(interval);
+
+    // Read resume draft from localStorage to send to AI
+    const fetchAISuggestions = async () => {
+      try {
+        const raw = localStorage.getItem("rp_draft");
+        const draft = raw ? JSON.parse(raw) : null;
+        const resumeData = draft ? {
+          jobTitle: draft.fd?.jobTitle,
+          summary: draft.fd?.summary,
+          skills: draft.skills?.filter(Boolean),
+          workHistory: draft.workList?.filter((w: any) => w.company || w.position),
+          education: draft.eduList?.filter((e: any) => e.institution),
+          domain: draft.domain,
+          experienceLevel: draft.experienceLevel,
+        } : null;
+
+        if (resumeData) {
+          const res = await fetch("/api/ai/suggest", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ resumeData }),
+            signal: AbortSignal.timeout(20000),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.suggestions?.length) {
+              const withApplied = data.suggestions.map((s: any) => ({ ...s, applied: false }));
+              clearInterval(progressInterval);
+              setScanProgress(100);
+              setSuggestions(withApplied);
+              setScanning(false);
+              return;
+            }
+          }
+        }
+      } catch (_) {
+        setAiError(true);
+      }
+      // Fallback to static suggestions
+      clearInterval(progressInterval);
+      setScanProgress(100);
+      setSuggestions(allSuggestions);
+      setScanning(false);
+    };
+
+    fetchAISuggestions();
+    return () => clearInterval(progressInterval);
   }, []);
 
   const appliedCount = suggestions.filter((s) => s.applied).length;
@@ -376,7 +420,7 @@ export default function AISuggestions() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 }}
             >
-              <Sparkles className="w-4 h-4 text-primary" /> AI-Powered Analysis
+              <Sparkles className="w-4 h-4 text-primary" /> Powered by Google Gemini AI
             </motion.div>
             <h1 className="text-4xl sm:text-5xl font-bold gradient-text mb-3">
               AI Resume Suggestions
@@ -405,7 +449,7 @@ export default function AISuggestions() {
                   >
                     <RefreshCw className="w-5 h-5 text-primary" />
                   </motion.div>
-                  <span className="font-semibold">Analysing your resume…</span>
+                  <span className="font-semibold">Gemini AI is analysing your resume…</span>
                 </div>
                 <div className="w-full h-2 bg-foreground/10 rounded-full overflow-hidden max-w-md mx-auto">
                   <motion.div
@@ -415,6 +459,7 @@ export default function AISuggestions() {
                   />
                 </div>
                 <p className="text-sm text-foreground/40 mt-2">{scanProgress}% complete</p>
+                {aiError && <p className="text-xs text-amber-500 mt-1">Using built-in suggestions (add GEMINI_API_KEY for AI-powered analysis)</p>}
               </motion.div>
             )}
           </AnimatePresence>
@@ -429,8 +474,12 @@ export default function AISuggestions() {
             >
               {/* Score */}
               <div className="card-blur rounded-2xl p-6 flex flex-col items-center justify-center sm:col-span-1">
-                <p className="text-xs font-bold uppercase tracking-widest text-foreground/40 mb-3">
+                <p className="text-xs font-bold uppercase tracking-widest text-foreground/40 mb-1">
                   Resume Score
+                </p>
+                <p className="text-[9px] text-foreground/30 mb-3 flex items-center gap-1">
+                  <svg width="8" height="8" viewBox="0 0 28 28" fill="none"><path d="M14 2C14 8.627 8.627 14 2 14C8.627 14 14 19.373 14 26C14 19.373 19.373 14 26 14C19.373 14 14 8.627 14 2Z" fill="currentColor"/></svg>
+                  Analysed by Gemini
                 </p>
                 <ScoreRing score={score} />
                 <p className="text-xs text-foreground/50 mt-2">

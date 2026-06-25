@@ -7,6 +7,7 @@ import { handleDemo } from "./routes/demo";
 import { handleSignUp, handleSignIn, handleSignOut, handleMe } from "./routes/auth";
 import { listResumes, createResume, getResume, updateResume, deleteResume, trackDownload } from "./routes/resumes";
 import { getUserStats, updateProfile, changePassword } from "./routes/users";
+import { handleAIChat, handleAISuggest } from "./routes/ai";
 import { requireAuth } from "./middleware/auth";
 
 export function createServer() {
@@ -37,6 +38,10 @@ export function createServer() {
   app.patch("/api/resumes/:id", requireAuth, updateResume);
   app.delete("/api/resumes/:id", requireAuth, deleteResume);
   app.post("/api/resumes/:id/download", requireAuth, trackDownload);
+
+  // ── AI routes (public — key checked server-side) ────────────────────────────
+  app.post("/api/ai/chat",    handleAIChat);
+  app.post("/api/ai/suggest", handleAISuggest);
 
   // ── User routes (protected) ─────────────────────────────────────────────────
   app.get("/api/users/me/stats", requireAuth, getUserStats);

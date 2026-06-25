@@ -99,8 +99,10 @@ function Bubble({ msg }: { msg: Message }) {
       className={`flex items-end gap-2 ${isBot ? "justify-start" : "justify-end"}`}
     >
       {isBot && (
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0 mb-1">
-          <Bot className="w-4 h-4 text-white" />
+        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#4285f4] to-[#9c27b0] flex items-center justify-center flex-shrink-0 mb-1">
+          <svg width="14" height="14" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2C14 8.627 8.627 14 2 14C8.627 14 14 19.373 14 26C14 19.373 19.373 14 26 14C19.373 14 14 8.627 14 2Z" fill="white"/>
+          </svg>
         </div>
       )}
       <div className={`max-w-[80%] ${isBot ? "" : "items-end flex flex-col"}`}>
@@ -126,12 +128,14 @@ function Bubble({ msg }: { msg: Message }) {
 function TypingDots() {
   return (
     <div className="flex items-end gap-2 justify-start">
-      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
-        <Bot className="w-4 h-4 text-white" />
+      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#4285f4] to-[#9c27b0] flex items-center justify-center flex-shrink-0">
+        <svg width="14" height="14" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2C14 8.627 8.627 14 2 14C8.627 14 14 19.373 14 26C14 19.373 19.373 14 26 14C19.373 14 14 8.627 14 2Z" fill="white"/>
+        </svg>
       </div>
       <div className="bg-foreground/8 border border-foreground/10 px-4 py-3 rounded-2xl rounded-bl-sm flex gap-1">
         {[0, 1, 2].map(i => (
-          <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-primary"
+          <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-[#4285f4]"
             animate={{ y: [0, -4, 0] }}
             transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
           />
@@ -160,18 +164,47 @@ export default function AIAssistant() {
     if (open) setTimeout(() => inputRef.current?.focus(), 300);
   }, [open]);
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     if (!text.trim()) return;
     const userMsg: Message = { id: Date.now().toString(), role: "user", text: text.trim(), time: now() };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setTyping(true);
-    // Simulate AI thinking delay
-    setTimeout(() => {
+
+    // Build chat history for context (last 6 messages)
+    const history = messages.slice(-6).map(m => ({
+      role: m.role === "assistant" ? "model" as const : "user" as const,
+      text: m.text,
+    }));
+
+    try {
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text.trim(), history }),
+        signal: AbortSignal.timeout(12000),
+      });
+
+      if (!res.ok) throw new Error("server");
+      const data = await res.json();
+      setTyping(false);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        text: data.reply,
+        time: now(),
+      }]);
+    } catch {
+      // Fallback to local knowledge base if server/key unavailable
       const answer = getAnswer(text);
       setTyping(false);
-      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", text: answer, time: now() }]);
-    }, 900 + Math.random() * 600);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        text: answer,
+        time: now(),
+      }]);
+    }
   };
 
   const reset = () => {
@@ -324,16 +357,20 @@ export default function AIAssistant() {
             style={{ maxHeight: "520px" }}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary to-secondary px-5 py-4 flex items-center gap-3">
-              <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
-                <Bot className="w-5 h-5 text-white" />
+            <div className="bg-gradient-to-r from-[#4285f4] via-[#9c27b0] to-[#f97316] px-5 py-4 flex items-center gap-3">
+              {/* Gemini star icon */}
+              <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg width="20" height="20" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 2C14 8.627 8.627 14 2 14C8.627 14 14 19.373 14 26C14 19.373 19.373 14 26 14C19.373 14 14 8.627 14 2Z" fill="white"/>
+                </svg>
+              </div>
               </div>
               <div className="flex-1">
                 <p className="font-bold text-white text-sm">Resume AI Assistant</p>
                 <div className="flex items-center gap-1.5">
                   <motion.span className="w-1.5 h-1.5 rounded-full bg-green-300"
                     animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                  <span className="text-white/70 text-xs">Online — ask me anything</span>
+                  <span className="text-white/70 text-xs">Powered by Gemini AI</span>
                 </div>
               </div>
               <button onClick={reset} className="p-1.5 hover:bg-white/20 rounded-lg smooth-transition" title="New conversation">
@@ -385,7 +422,12 @@ export default function AIAssistant() {
                   <Send className="w-3.5 h-3.5 text-white" />
                 </motion.button>
               </div>
-              <p className="text-center text-[10px] text-foreground/25 mt-1.5">Powered by ResumePro AI</p>
+              <p className="text-center text-[10px] text-foreground/30 mt-1.5 flex items-center justify-center gap-1">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Powered by <span className="font-semibold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Google Gemini</span>
+              </p>
             </div>
           </motion.div>
         )}
