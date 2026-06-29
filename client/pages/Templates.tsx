@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Sparkles, Palette, ChevronUp, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 
@@ -280,6 +280,32 @@ export default function Templates() {
   const domainLabel = domain ? domainLabels[domain] : null;
 
   const [selected, setSelected] = useState<string | null>(null);
+  const [showCustomize, setShowCustomize] = useState(false);
+
+  // Customization options
+  const [customColor, setCustomColor] = useState<string | null>(null);
+  const [customFont, setCustomFont] = useState<string>("Georgia, serif");
+
+  const ACCENT_COLORS = [
+    { label: "Orange",  value: "#f97316" },
+    { label: "Amber",   value: "#d97706" },
+    { label: "Teal",    value: "#0d9488" },
+    { label: "Blue",    value: "#3b82f6" },
+    { label: "Violet",  value: "#7c3aed" },
+    { label: "Rose",    value: "#e11d48" },
+    { label: "Slate",   value: "#475569" },
+    { label: "Black",   value: "#1a1a1a" },
+  ];
+
+  const FONTS = [
+    { label: "Classic (Georgia)",   value: "Georgia, serif" },
+    { label: "Modern (Inter)",      value: "Inter, sans-serif" },
+    { label: "Elegant (Garamond)",  value: "EB Garamond, serif" },
+    { label: "Clean (Helvetica)",   value: "Helvetica, Arial, sans-serif" },
+  ];
+
+  // Effective accent = custom override or template default
+  const effectiveAccent = customColor ?? selectedTemplate?.accent ?? "#f97316";
 
   // Filter templates by domain — show relevant ones first, then others
   const relevant = domain
@@ -294,7 +320,13 @@ export default function Templates() {
 
   const handleUse = () => {
     if (selected) {
-      navigate(`/create-resume?template=${selected}&domain=${domain ?? ""}`);
+      const params = new URLSearchParams({
+        template: selected,
+        domain: domain ?? "",
+        ...(customColor ? { color: customColor } : {}),
+        ...(customFont !== "Georgia, serif" ? { font: customFont } : {}),
+      });
+      navigate(`/create-resume?${params.toString()}`);
     }
   };
 
@@ -486,7 +518,7 @@ export default function Templates() {
         </div>
       </section>
 
-      {/* Fixed bottom bar — Use Template */}
+      {/* Fixed bottom bar — Customize + Use Template */}
       <AnimatePresence>
         {selected && (
           <motion.div
@@ -496,14 +528,111 @@ export default function Templates() {
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
           >
+            {/* Customize panel — slides up above the bar */}
+            <AnimatePresence>
+              {showCustomize && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="bg-background/95 backdrop-blur-xl border-t border-border/30 px-4 sm:px-8 py-5">
+                    <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+                      {/* Accent Color */}
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-foreground/50 mb-3 flex items-center gap-1.5">
+                          <Palette className="w-3.5 h-3.5" /> Accent Color
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {/* Template default */}
+                          <button
+                            onClick={() => setCustomColor(null)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold smooth-transition border ${
+                              customColor === null
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "card-blur hover:border-primary/40 text-foreground/60"
+                            }`}
+                          >
+                            <div className="w-4 h-4 rounded-full border-2 border-current" style={{ background: selectedTemplate?.accent }} />
+                            Default
+                          </button>
+                          {ACCENT_COLORS.map(c => (
+                            <button
+                              key={c.value}
+                              onClick={() => setCustomColor(c.value)}
+                              title={c.label}
+                              className={`w-8 h-8 rounded-full smooth-transition border-2 ${
+                                customColor === c.value ? "scale-125 border-foreground" : "border-transparent hover:scale-110"
+                              }`}
+                              style={{ background: c.value }}
+                            />
+                          ))}
+                          {/* Custom hex input */}
+                          <div className="flex items-center gap-1.5 card-blur px-2 py-1 rounded-xl border">
+                            <div className="w-4 h-4 rounded-full border border-foreground/20" style={{ background: customColor ?? selectedTemplate?.accent }} />
+                            <input
+                              type="color"
+                              value={customColor ?? selectedTemplate?.accent ?? "#f97316"}
+                              onChange={e => setCustomColor(e.target.value)}
+                              className="w-6 h-6 rounded cursor-pointer bg-transparent border-0 outline-none p-0"
+                              title="Custom color"
+                            />
+                            <span className="text-xs text-foreground/50">{(customColor ?? selectedTemplate?.accent ?? "").toUpperCase()}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Font */}
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-foreground/50 mb-3 flex items-center gap-1.5">
+                          <span className="font-bold text-sm">Aa</span> Font Style
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {FONTS.map(f => (
+                            <button
+                              key={f.value}
+                              onClick={() => setCustomFont(f.value)}
+                              className={`px-3 py-1.5 rounded-xl text-xs smooth-transition border ${
+                                customFont === f.value
+                                  ? "border-primary bg-primary/10 text-primary font-bold"
+                                  : "card-blur hover:border-primary/40 text-foreground/60"
+                              }`}
+                              style={{ fontFamily: f.value }}
+                            >
+                              {f.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live preview of customisation */}
+                    <div className="max-w-7xl mx-auto mt-4 flex items-center gap-3">
+                      <p className="text-xs text-foreground/40">Preview:</p>
+                      <div className="flex items-center gap-2 px-4 py-2 rounded-xl border" style={{ borderColor: effectiveAccent + "40", background: effectiveAccent + "10" }}>
+                        <div className="w-4 h-4 rounded-full" style={{ background: effectiveAccent }} />
+                        <span className="text-sm font-bold" style={{ color: effectiveAccent, fontFamily: customFont }}>
+                          {selectedTemplate?.name} — {ACCENT_COLORS.find(c => c.value === customColor)?.label ?? "Default"} · {FONTS.find(f => f.value === customFont)?.label.split(" ")[0]}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Frosted bar */}
-            <div className="absolute inset-0 bg-background/85 backdrop-blur-xl border-t border-border/30" />
+            <div className="absolute inset-0 bg-background/85 backdrop-blur-xl border-t border-border/30" style={{ bottom: showCustomize ? "auto" : 0, top: 0, height: "100%" }} />
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
               {/* Selected info */}
               <div className="flex items-center gap-3 min-w-0">
                 <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${selectedTemplate?.color} flex-shrink-0 flex items-center justify-center`}
+                  className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center"
+                  style={{ background: effectiveAccent }}
                 >
                   <Check className="w-5 h-5 text-white" />
                 </div>
@@ -515,6 +644,22 @@ export default function Templates() {
 
               {/* Actions */}
               <div className="flex items-center gap-3 flex-shrink-0">
+                {/* Customize toggle */}
+                <motion.button
+                  onClick={() => setShowCustomize(v => !v)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl smooth-transition border ${
+                    showCustomize
+                      ? "bg-primary/15 text-primary border-primary/40"
+                      : "card-blur text-foreground/70 hover:border-primary/40"
+                  }`}
+                >
+                  <Palette className="w-4 h-4" />
+                  Customize
+                  {showCustomize ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+                </motion.button>
+
                 <button
                   onClick={() => setSelected(null)}
                   className="px-4 py-2.5 text-sm text-foreground/60 hover:text-foreground card-blur rounded-xl smooth-transition"
@@ -526,6 +671,7 @@ export default function Templates() {
                   className="group inline-flex items-center gap-2 px-7 py-2.5 bg-gradient-to-r from-primary to-secondary text-white font-bold text-sm rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/50 smooth-transition"
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.97 }}
+                  style={{ background: `linear-gradient(to right, ${effectiveAccent}, ${effectiveAccent}dd)` }}
                 >
                   Use Template
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

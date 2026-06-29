@@ -269,6 +269,8 @@ export default function ResumeBuilder() {
             templateId: tplParam,
             layoutColumns: draft.layoutColumns || "one-col",
             withPhoto: draft.withPhoto ?? false,
+            customColor: searchParams.get("color") || draft.customColor || null,
+            customFont:  searchParams.get("font")  || draft.customFont  || null,
           }));
         } catch (_) {}
         setStep(1);
@@ -306,6 +308,14 @@ export default function ResumeBuilder() {
   const progressPct = Math.round((step / totalSteps) * 100);
   // Domain-specific content config — updates all placeholders/suggestions automatically
   const domainCfg  = getDomainConfig(searchParams.get("domain"));
+  // Custom color/font from Templates page customizer
+  const customColor = searchParams.get("color") || null;
+  const customFont  = searchParams.get("font") || null;
+  // Override tpl accent if user customised it
+  const effectiveTpl = tpl ? {
+    ...tpl,
+    accent: customColor ?? tpl.accent,
+  } : tpl;
 
   // ── Save ──────────────────────────────────────────────────────────────────────
 
@@ -325,9 +335,7 @@ export default function ResumeBuilder() {
     summary: fd.summary,
     skills: skills.filter(Boolean),
     status: "draft" as const,
-  }), [fd, selectedTpl, experience, isStudent, eduLevel, columns, withPhoto, skills, searchParams]);
-
-  const handleSave = useCallback(async () => {
+  }), [fd, selectedTpl, experience, isStudent, eduLevel, columns, withPhoto, skills, searchParams]); = useCallback(async () => {
     setSaveStatus("saving");
     const draftData = { ...buildPayload(), fd, workList, eduList, projects, certs, achievements, refs, languages, softSkills, interests, photoDataUrl, savedAt: new Date().toISOString() };
     try {
@@ -1044,7 +1052,7 @@ export default function ResumeBuilder() {
 
                 <div className={`lg:block ${showPreview?"block":"hidden lg:block"}`}>
                   <div ref={previewRef}>
-                    <LivePreview fd={fd} tpl={tpl} twoCol={twoCol} withPhoto={hasPhoto} eduLevel={eduLevel} experience={experience} workList={workList} skills={skills.filter(Boolean)} />
+                    <LivePreview fd={fd} tpl={effectiveTpl} twoCol={twoCol} withPhoto={hasPhoto} eduLevel={eduLevel} experience={experience} workList={workList} skills={skills.filter(Boolean)} customFont={customFont} />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -1067,16 +1075,18 @@ export default function ResumeBuilder() {
 
 // ─── Live Preview ─────────────────────────────────────────────────────────────
 
-function LivePreview({ fd, tpl, twoCol, withPhoto, eduLevel, experience, workList, skills }: {
+function LivePreview({ fd, tpl, twoCol, withPhoto, eduLevel, experience, workList, skills, customFont }: {
   fd: PersonalInfo;
   tpl: typeof templateOptions[0] | undefined;
   twoCol: boolean; withPhoto: boolean;
   eduLevel: string; experience: string;
   workList: WorkEntry[];
   skills: string[];
+  customFont?: string | null;
 }) {
-  const accent   = tpl?.accent ?? "#6366f1";
-  const bg       = tpl?.bg     ?? "#f5f3ff";
+  const accent   = tpl?.accent ?? "#f97316";
+  const bg       = tpl?.bg     ?? "#fff7ed";
+  const font     = customFont  ?? "Georgia, serif";
   const name     = fd.fullName || "Your Name";
   const title    = fd.jobTitle  || "Job Title";
   const email    = fd.email     || "email@example.com";
@@ -1086,7 +1096,7 @@ function LivePreview({ fd, tpl, twoCol, withPhoto, eduLevel, experience, workLis
   const eduLabel = educationLevels.find(e => e.id === eduLevel)?.label ?? "";
 
   return (
-    <div className="rounded-xl overflow-hidden shadow-xl border border-gray-200 text-[10.5px] leading-snug" style={{ background: bg, fontFamily:"Georgia,serif", color:"#1a1a2e" }}>
+    <div className="rounded-xl overflow-hidden shadow-xl border border-gray-200 text-[10.5px] leading-snug" style={{ background: bg, fontFamily: font, color:"#1a1a2e" }}>
       <div className="px-5 py-4 text-white" style={{ background: accent }}>
         <div className="flex items-start gap-3">
           {withPhoto && <div className="w-11 h-11 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0 border-2 border-white/40"><User className="w-5 h-5 text-white/70" /></div>}

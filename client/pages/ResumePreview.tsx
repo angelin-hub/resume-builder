@@ -44,9 +44,10 @@ function Sec({ label, accent, children }: { label: string; accent: string; child
 
 // ─── Full A4 resume paper ─────────────────────────────────────────────────────
 function ResumePaper({ draft, paperRef }: { draft: any; paperRef: React.RefObject<HTMLDivElement> }) {
-  const tpl    = TEMPLATES[draft?.templateId] ?? TEMPLATES.modern;
-  const accent = tpl.accent;
+  const tpl    = TEMPLATES[draft?.templateId] ?? TEMPLATES.classic;
+  const accent = draft?.customColor ?? tpl.accent;
   const bg     = tpl.bg;
+  const font   = draft?.customFont  ?? "Georgia, serif";
   const twoCol = draft?.layoutColumns === "two-col";
   const photo  = draft?.withPhoto === true || draft?.withPhoto === "with-photo";
   const fd     = draft?.fd ?? {};
@@ -181,7 +182,7 @@ function ResumePaper({ draft, paperRef }: { draft: any; paperRef: React.RefObjec
   );
 
   return (
-    <div ref={paperRef} style={{ background: bg, fontFamily: "Georgia,serif", color: "#1a1a2e", width: "210mm", minHeight: "297mm" }}
+    <div ref={paperRef} style={{ background: bg, fontFamily: font, color: "#1a1a2e", width: "210mm", minHeight: "297mm" }}
       className="shadow-2xl">
       {/* Header */}
       <div className="px-10 py-7 text-white" style={{ background: accent }}>
