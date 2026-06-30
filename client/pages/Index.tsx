@@ -684,7 +684,7 @@ function MeetTheTeam() {
   const team = [
     {
       name: "Paul Isak Brighttan",
-      role: "Full-Stack Developer",
+      role: "Frontend Developer",
       email: "brighttanpaul@gmail.com",
       initials: "PB",
       gradient: "from-orange-500 to-amber-500",
@@ -692,31 +692,40 @@ function MeetTheTeam() {
       icon: "⚡",
     },
     {
-      name: "Joywin Algo",
+      name: "M. Srilaya",
       role: "Frontend Developer",
-      email: "joywin2007rj@gmail.com",
-      initials: "JA",
+      email: "laya751707@gmail.com",
+      initials: "MS",
       gradient: "from-amber-500 to-yellow-400",
       glow: "rgba(245,158,11,0.4)",
       icon: "🎨",
     },
     {
+      name: "Gracy Angelin V",
+      role: "Database Engineer",
+      email: "angelinchrist76@gmail.com",
+      initials: "GA",
+      gradient: "from-teal-500 to-emerald-500",
+      glow: "rgba(20,184,166,0.4)",
+      icon: "🗄️",
+    },
+    {
       name: "Angelin Achsah S S",
-      role: "UI/UX Designer",
+      role: "Backend Developer",
       email: "angelinachsah@gmail.com",
       initials: "AA",
       gradient: "from-rose-500 to-orange-400",
       glow: "rgba(244,63,94,0.4)",
-      icon: "✨",
+      icon: "🔧",
     },
     {
-      name: "M. Srilaya",
+      name: "Joywin Algo",
       role: "Backend Developer",
-      email: "laya751707@gmail.com",
-      initials: "MS",
-      gradient: "from-stone-500 to-gray-600",
-      glow: "rgba(120,113,108,0.4)",
-      icon: "🔧",
+      email: "joywin2007rj@gmail.com",
+      initials: "JA",
+      gradient: "from-violet-500 to-purple-500",
+      glow: "rgba(139,92,246,0.4)",
+      icon: "⚙️",
     },
   ];
 
@@ -752,7 +761,7 @@ function MeetTheTeam() {
         </motion.div>
 
         {/* Cards grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           {team.map((member, i) => (
             <motion.div key={i}
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
